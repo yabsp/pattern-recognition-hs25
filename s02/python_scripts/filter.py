@@ -36,8 +36,22 @@ class Filter():
         """
 
         #Complete the code here
+        K = image.shape[0]
+        k = image_filter.shape[0]
+        used_image = image
+        flipped_filter = np.flip(image_filter)
+        if (mode == 'same'):
+            used_image = np.pad(image, (k-1)//2, mode='constant', constant_values=0)
+        elif (mode == 'valid'):
+            K = K - k + 1
 
-        return 
+        output_image = np.zeros((K, K))
+        for m in range(K):
+            for n in range(K):
+                win = used_image[m : m + k, n : n + k]
+                output_image[m, n] = np.sum(win * flipped_filter)
+
+        return output_image
 
     @staticmethod
     def convolve2d_fft(image: np.ndarray, image_filter: np.ndarray, mode: str ='same')-> np.ndarray:      
@@ -117,8 +131,8 @@ if __name__ == '__main__':
     from scipy.signal import convolve2d,fftconvolve
     image = brick()
 
-    # plt.imshow(image)
-    # plt.show()
+    plt.imshow(image)
+    plt.show()
 
     # Test convolve2d
     image_filter = np.array([[1,2,3],[4,5,6],[7,8,9]])
