@@ -50,6 +50,8 @@ class Filter():
             for n in range(K):
                 win = used_image[m : m + k, n : n + k]
                 output_image[m, n] = np.sum(win * flipped_filter)
+        if (mode == 'same'):
+            output_image = output_image[(k)//2 - 1 : K - (k)//2 + 1, (k)//2 - 1 : K - (k)//2 + 1]
 
         return output_image
 
@@ -74,8 +76,20 @@ class Filter():
         """
 
         # Complete the code here
+        K = image.shape[0]
+        k = image_filter.shape[0]
+        size = K + k - 1
+        fft_shape = (size, size)
+        fft_image = np.fft.fft2(image, s=fft_shape)
+        fft_filter = np.fft.fft2(image_filter, s=fft_shape)
 
-        return
+        output_image = np.real(np.fft.ifft2(fft_image * fft_filter))
+
+        if (mode == 'same'):
+            output_image = output_image[(k-1)//2 : K + (k-1)//2, (k-1)//2 : K + (k-1)//2]
+        elif (mode == 'valid'):
+            output_image = output_image[k-1 : K, k-1 : K]
+        return output_image
     
 
     @staticmethod
