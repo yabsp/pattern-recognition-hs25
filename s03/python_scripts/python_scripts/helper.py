@@ -27,6 +27,22 @@ class CNN_simple(nn.Module):
         x = self.fc3(x)
         return x
 
+
+class CNN_medium(nn.Module):
+    def __init__(self, image_size):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, padding = 'same', bias = True)
+        self.conv2 = nn.Conv2d(32, 64, 3, padding = 'same', bias = True)
+        self.conv3 = nn.Conv2d(64, 32, 3, padding = 'same', bias = True)
+        self.conv4 = nn.Conv2d(32, 1, 3, padding = 'same', bias = True)
+
+    def forward(self, x):
+        x = F.relu(self.conv1(x))
+        x = F.relu(self.conv2(x))
+        x = F.relu(self.conv3(x))
+        x = self.conv4(x)
+        return x
+
 """
 Given batch of images, return noisy images with Gaussian noise with std sigma.
 INPUT:

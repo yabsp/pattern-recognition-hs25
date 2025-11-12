@@ -6,16 +6,39 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.datasets as datasets
 import matplotlib.pyplot as plt
+import torch.optim as optim
 
 from helper import data_generator, plot_image, add_noise, CNN_simple, SNR
 
 use_cuda=torch.cuda.is_available()
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-device = "cpu"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = "cpu"
 
 print("Device:",device)
 
+trainloader, testloader = data_generator(batch_size=32)
+net = CNN_simple(image_size=28)
+criterion = nn.MSELoss()
+optimizer = optim.Adam(net.parameters(), lr=1e-3)
+sigma = 0.5
+num_epochs = 10
+net = net.to(device)
 
+for epoch in range(num_epochs):
+    running_loss = 0.0
+    for imgs, _ in trainloader:
+        imgs = imgs.to(device)
+        noisy_imgs = add_noise(imgs, sigma)
+
+        optimizer.zero_grad()
+        outputs = net(noisy_imgs)
+        loss = criterion(outputs, imgs.view(imgs.size(0), -1))
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+
+
+torch.save(net.state_dict(), "denoising.pt")
 
 if __name__ == '__main__':
     batch_size = 32
