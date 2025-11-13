@@ -1,60 +1,21 @@
 import numpy as np 
 
-import importlib
-import helper
-importlib.reload(helper)
 import torch
 import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.datasets as datasets
 import matplotlib.pyplot as plt
-import torch.optim as optim
 
-
-from helper import data_generator, plot_image, add_noise, CNN_simple, CNN_medium, SNR, convolution_fft_torch, Gaussian_blur
+from helper import data_generator, plot_image, add_noise, CNN_simple, SNR, convolution_fft_torch, Gaussian_blur
 
 use_cuda=torch.cuda.is_available()
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
-#device = "cpu"
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
+device = "cpu"
 
 print("Device:",device)
-batch_size = 32
-sigma_noise = 0.01
-num_epochs = 10
-image_size = 28
-
-trainloader, testloader = data_generator(batch_size=batch_size)
-
-net = CNN_medium(image_size).to(device)
-criterion = nn.MSELoss()
-optimizer = optim.Adam(net.parameters(), lr=1e-3)
-
-for epoch in range(num_epochs):
-    net.train()
-    running_loss = 0.0
-    for imgs, _ in trainloader:
-        imgs = imgs.to(device)
-
-        conv_imgs = torch.zeros_like(imgs)
-        for i in range(imgs.shape[0]):
-            sigma_blur = np.random.uniform(0.5, 2.5)
-            kernel = Gaussian_blur(sigma_blur, image_size)
-            kernel_torch = torch.from_numpy(kernel).float().to(device).unsqueeze(0).unsqueeze(0)
-            conv_imgs[i:i+1] = convolution_fft_torch(imgs[i:i+1], kernel_torch)
-
-        noisy_imgs = torch.clamp(add_noise(conv_imgs, sigma_noise), 0.0, 1.0)
-
-        optimizer.zero_grad()
-        outputs = net(noisy_imgs)
-        loss = criterion(outputs, imgs)
-        print(loss)
-        loss.backward()
-        optimizer.step()
 
 
-model_scripted = torch.jit.script(net.cpu())
-model_scripted.save("deblurring_family.pt")
 
 if __name__ == '__main__':
     batch_size = 16

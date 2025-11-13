@@ -21,14 +21,13 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Device:",device)
 
 trainloader, testloader = data_generator(batch_size=32)
-net = CNN_medium(image_size=28)
+net = CNN_medium(image_size=28).to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(net.parameters(), lr=1e-3)
 
 sigma_blur = 1.5
 sigma = 0.01
 num_epochs = 10
-net = net.to(device)
 
 h_np = Gaussian_blur(sigma_blur, 28)
 h_np /= np.sum(h_np)
