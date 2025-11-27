@@ -36,6 +36,6 @@ def stft(x: torch.Tensor, n_fft=512, hop=160, win=320) -> torch.Tensor:
                       window=w, return_complex=True)
 
 def istft(X: torch.Tensor, n_fft=512, hop=160, win=320, length=None) -> torch.Tensor:
-    w = torch.hann_window(win, device=X.device, dtype=X.dtype)
+    w = torch.hann_window(win, device=X.device)
     return torch.istft(X, n_fft=n_fft, hop_length=hop, win_length=win,
                        window=w, length=length)

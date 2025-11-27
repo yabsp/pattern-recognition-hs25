@@ -3,13 +3,14 @@ import random, re
 import numpy as np
 import torch, torchaudio
 from torch.utils.data import Dataset, DataLoader
-
-from audio_helper import TARGET_SR, to_mono, ensure_sr, pad_or_crop, snr_db, save_wav
+from audio_helper import TARGET_SR, to_mono, ensure_sr, pad_or_crop, snr_db, save_wav, istft, stft
 from wiener import wiener_enhance_freqavg
-# Optional CNN import for comparison:
-# from models import TinyDenoiser
+# CNN imports
+from models import TinyDenoiser, train_cnn_denoiser, eval_cnn_and_export
+
 
 # ------------ Dataset (VoiceBank + DEMAND) ------------
+
 
 class VoiceBankDemandDataset(Dataset):
     def __init__(self, root: Path, split: str, segment_sec: float = None, sr: int = TARGET_SR):
@@ -80,7 +81,7 @@ class VoiceBankDemandDataset(Dataset):
 # ------------ Evaluation helpers ------------
 
 @torch.no_grad()
-def eval_wiener_and_export(test_loader, n_examples=5, noise_quantile=0.10, out_dir=Path("out")):
+def eval_wiener_and_export(test_loader, n_examples, noise_quantile, out_dir):
     out_dir.mkdir(parents=True, exist_ok=True)
     dsnrs = []
     done = 0
@@ -99,13 +100,32 @@ def eval_wiener_and_export(test_loader, n_examples=5, noise_quantile=0.10, out_d
     print(f"ΔSNR (Wiener, q={noise_quantile:.2f}): {np.mean(dsnrs):.2f} dB | Saved {done} demo sets to {out_dir}")
 
 def main():
-    torch.manual_seed(1337); np.random.seed(1337)
-    DATA_ROOT = Path("")  # <- set to your VoiceBank+DEMAND root
+    SEED = 1337
+    torch.manual_seed(SEED); np.random.seed(SEED)
+    TARGET_SR = 16000
+    DATA_ROOT = Path("../../data/s04")  # <- set to your VoiceBank+DEMAND root
     test_ds  = VoiceBankDemandDataset(DATA_ROOT, "test", segment_sec=None, sr=TARGET_SR)
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=True, num_workers=0)
 
     # Calls the student's function:
-    eval_wiener_and_export(test_loader, n_examples=6, noise_quantile=0.10, out_dir=Path("out"))
+    eval_wiener_and_export(test_loader, n_examples=6, noise_quantile=0.10, out_dir=OUT_DIR)
+    
+    #uncomment to compare to CNN
+    
+    #SEGMENT_SEC = 2.0       
+    #BATCH_SIZE = 8
+    #EPOCHS = 10
+    #DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    #NUM_WORKERS = 0   
+    #PERSISTENT = False
+    #train_ds = VoiceBankDemandDataset(DATA_ROOT, "train", segment_sec=SEGMENT_SEC, sr=TARGET_SR)
+    #test_ds  = VoiceBankDemandDataset(DATA_ROOT, "test",  segment_sec=None,    sr=TARGET_SR)
+    #train_loader = torch.utils.data.DataLoader( train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=NUM_WORKERS, persistent_workers=PERSISTENT, drop_last=True)
+    #test_loader = torch.utils.data.DataLoader(test_ds, batch_size=1, shuffle=True,num_workers=NUM_WORKERS, persistent_workers=PERSISTENT)
+    #model, device_used = train_cnn_denoiser(train_loader, epochs=EPOCHS)
+    #_ = eval_cnn_and_export(model, test_loader, n_examples=10, device=DEVICE)
 
 if __name__ == "__main__":
     main()
+
+
