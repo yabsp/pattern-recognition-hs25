@@ -3,3 +3,4 @@
 *.zip
 data/
 s04/python_scripts/out/
+*__pycache__/
