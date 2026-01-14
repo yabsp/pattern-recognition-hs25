@@ -3,6 +3,7 @@ import torch
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from matplotlib import image as mpimg
+from iter_maxpool import load_image_as_tensor, maxpool_iter, gaussian_blur_iter, tensor_to_numpy_image
 
 def run_experiment(image_path: str,
                    pool_k: int = 3,
