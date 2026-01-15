@@ -24,3 +24,13 @@ class GuidedReLUFn(torch.autograd.Function):
 class GuidedReLU(nn.Module):
     def forward(self, x):
         return GuidedReLUFn.apply(x)
+
+def replace_relu_with_guided(module):
+    """
+    Recursively replaces all nn.ReLU layers with GuidedReLU.
+    """
+    for name, child in module.named_children():
+        if isinstance(child, nn.ReLU):
+            setattr(module, name, GuidedReLU())
+        else:
+            replace_relu_with_guided(child)
