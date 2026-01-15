@@ -23,16 +23,29 @@ class MLP2d(nn.Module):
         x: tensor of shape [B, 2]
         returns: tensor of shape [B, 2] with class scores (logits)
         """
-        # TODO: implement forward pass
-        raise NotImplementedError
+        return self.net(x)
 
 
 def train_classifier(model, X, y, epochs=200, lr=1e-2, batch_size=64):
     """
     Trains model on (X, y) using cross entropy loss.
     """
+
+    dataset = TensorDataset(X, y)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+
     model.train()
-    # TODO: implement training loop
+    for epoch in range(epochs):
+        for batch_x, batch_y in dataloader:
+            optimizer.zero_grad()
+            logits = model(batch_x)
+            loss = criterion(logits, batch_y)
+            loss.backward()
+            optimizer.step()
+
 
     # Compute training accuracy
     model.eval()
@@ -59,20 +72,20 @@ def evaluate_on_grid(model,
     """
     model.eval()
 
-    xs = 
-    ys = 
+    xs = torch.linspace(x_min, x_max, steps=steps)
+    ys = torch.linspace(y_min, y_max, steps=steps)
 
-    XX, YY =    # shape [steps, steps]
-    grid =      # [steps*steps, 2]
-    
+    XX, YY = torch.meshgrid(xs, ys)   # shape [steps, steps]
+    grid = torch.stack([XX.reshape(-1), YY.reshape(-1)], dim=1)     # [steps*steps, 2]
+
     #compute class scores for all grid points
     with torch.no_grad():
-        logits =                      # [steps*steps, 2]
-        probs =                       # [steps*steps, 2]
-        p1 =                          # [steps*steps]
-    #reshape 
-    P =                 # [steps, steps]
-    P = P.cpu().numpy() #convert to numpy 
+        logits =  model(grid)                    # [steps*steps, 2]
+        probs = F.softmax(logits, dim=1)                # [steps*steps, 2]
+        p1 = probs[:, 1]                       # [steps*steps]
+    #reshape
+    P = p1.view(steps, steps)                # [steps, steps]
+    P = P.cpu().numpy() #convert to numpy
     XX_np = XX.cpu().numpy()
     YY_np = YY.cpu().numpy()
 
@@ -91,32 +104,34 @@ def compute_input_gradients(model, xs, ys):
     model.eval()
 
     steps = xs.numel()
-    XX, YY =      # [steps, steps]
-    grid =        # [steps*steps, 2]
+    XX, YY = torch.meshgrid(xs, ys)     # [steps, steps]
+    # use reshape as elements not contiguous in memory -> view not possible
+    grid = torch.stack([XX.reshape(-1), YY.reshape(-1)], dim=1)       # [steps*steps, 2]
     
     #enable gradient tracking here:
 
+    grid.requires_grad_(True)
     #pass grid through the model to obtain scores
-    logits =                            # [steps*steps, 2]
+    logits = model(grid)                          # [steps*steps, 2]
     #apply softmax
-    probs =                             # [steps*steps, 2]
+    probs = F.softmax(logits, dim=1)                            # [steps*steps, 2]
     #extract the probability for class 1
-    p1 =                                # [steps*steps]
+    p1 = probs[:, 1]                               # [steps*steps]
 
     #compute the gradient of the sum of these probabilites wrt grid
     #i) call model.zero_grad()
     #ii) call p1.sum().backward()
     #iii) 
-
+    p1.sum().backward()
     grads = grid.grad                    # [steps*steps, 2]
     grads = grads.reshape(steps, steps, 2) # [steps, steps, 2]
 
-    GX =                                        # d p / d x1
-    GY =                                        # d p / d x2
+    GX = grads[:, :, 0]                                       # d p / d x1
+    GY = grads[:, :, 1]                                       # d p / d x2
 
     GX = GX.detach().cpu().numpy()
     GY = GY.detach().cpu().numpy()
-    
+
     return GX, GY
 
 
@@ -126,7 +141,8 @@ if __name__ == "__main__":
 
     # Train classifier
     model = MLP2d(hidden_dim=16)
-    train_classifier(model, X, y, epochs=200, lr=1e-2, batch_size=64)
+    acc = train_classifier(model, X, y, epochs=200, lr=1e-2, batch_size=64)
+    print(acc)
 
     # Grid evaluation
     XX, YY, P, xs, ys = evaluate_on_grid(model,
@@ -136,6 +152,8 @@ if __name__ == "__main__":
 
     # Gradients wrt input
     GX, GY = compute_input_gradients(model, xs, ys)
+
+    plot_data_boundary_and_gradients(X, y, XX, YY, P, GX, GY)
 
     # Plot all together
     # Pass the required inputs into the provided plotting function 

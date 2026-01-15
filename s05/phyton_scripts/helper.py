@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from matplotlib.lines import Line2D
 from torch.utils.data import TensorDataset, DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
@@ -77,9 +78,11 @@ def plot_data_boundary_and_gradients(X, y, XX, YY, P, GX, GY, step=3):
                s=20, alpha=0.7, label="Class 1")
 
     # Decision boundary contour at p=0.5
-    cs = ax.contour(XX, YY, P, levels=[0.5],
+    ax.contour(XX, YY, P, levels=[0.5],
                     linewidths=2.0, linestyles="solid", colors="k")
-    cs.collections[0].set_label("Decision boundary p(y=1|x)=0.5")
+
+    boundary_proxy = Line2D([0], [0], color='k', linewidth=2.0,
+                            label="Decision boundary p(y=1|x)=0.5")
 
     # Gradient quiver plot, subsampled
     XX_sub = XX[::step, ::step]
@@ -93,8 +96,11 @@ def plot_data_boundary_and_gradients(X, y, XX, YY, P, GX, GY, step=3):
     ax.set_xlabel("x1")
     ax.set_ylabel("x2")
     ax.set_aspect("equal", "box")
-    ax.legend(loc="lower right")
     ax.set_title("Toy data, decision boundary, and input gradients")
+
+    handles, labels = ax.get_legend_handles_labels()
+    handles.append(boundary_proxy)
+    ax.legend(handles=handles, loc="lower right")
 
     plt.tight_layout()
     plt.show()
